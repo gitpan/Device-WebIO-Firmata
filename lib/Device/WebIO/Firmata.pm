@@ -22,7 +22,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
 # POSSIBILITY OF SUCH DAMAGE.
 package Device::WebIO::Firmata;
-$Device::WebIO::Firmata::VERSION = '0.001';
+$Device::WebIO::Firmata::VERSION = '0.002';
 # ABSTRACT: Interface between Device::WebIO and Device::Firmata (Arduino)
 use v5.12;
 use Moo;
@@ -47,6 +47,18 @@ has 'pwm_pin_count' => (
     is      => 'ro',
     default => sub { 128 },
 );
+has 'pin_desc' => (
+    is => 'ro',
+    # TODO this is based on the Uno's pin header.  Would be nice to have 
+    # a configurable option for different boards.
+    default => sub {[qw{
+        SCL SDA AREF GND 13 12 11 10 9 8 7 6 5 4 3 2 1 0
+        IOREF RESET 33V 50V GND GND VIN A0 A1 A2 A3 A4 A5
+    }]},
+);
+has '_pin_mode' => (
+    is => 'ro',
+);
 
 with 'Device::WebIO::Device::DigitalOutput';
 with 'Device::WebIO::Device::DigitalInput';
@@ -62,6 +74,8 @@ sub BUILDARGS
     my $dev = Device::Firmata->open( $port )
         or die "Could not connect to Firmata Server on '$port'\n";
     $args->{'_firmata'} = $dev;
+
+    $args->{'_pin_mode'} = [ ('IN') x 128 ];
 
     return $args;
 }
@@ -83,6 +97,7 @@ sub input_pin
 sub set_as_output
 {
     my ($self, $pin) = @_;
+    $self->_pin_mode->[$pin] = 'OUT';
     $self->_firmata->pin_mode( $pin, PIN_OUTPUT );
     return 1;
 }
@@ -90,8 +105,23 @@ sub set_as_output
 sub set_as_input
 {
     my ($self, $pin) = @_;
+    $self->_pin_mode->[$pin] = 'IN';
     $self->_firmata->pin_mode( $pin, PIN_INPUT );
     return 1;
+}
+
+sub is_set_input
+{
+    my ($self, $pin) = @_;
+    return 1 if $self->_pin_mode->[$pin] eq 'IN';
+    return 0;
+}
+
+sub is_set_output
+{
+    my ($self, $pin) = @_;
+    return 1 if $self->_pin_mode->[$pin] eq 'OUT';
+    return 0;
 }
 
 
@@ -154,6 +184,33 @@ sub adc_pin_count
         return $value;
     }
 }
+
+
+sub all_desc
+{
+    my ($self) = @_;
+    my $pin_count = $self->input_pin_count;
+    return {
+        UART    => 0,
+        SPI     => 0,
+        I2C     => 0,
+        ONEWIRE => 0,
+        GPIO => {
+            map {
+                my $function = $self->_pin_mode->[$_];
+                my $value = $function eq 'IN'
+                    ? $self->input_pin( $_ ) 
+                    : $self->{'_output_pin_value'}[$_];
+                $_ => {
+                    function => $function,
+                    value    => $value,
+                };
+            } 0 .. ($pin_count - 1)
+        },
+    };
+}
+
+
 
 
 1;

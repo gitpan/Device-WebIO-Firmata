@@ -21,7 +21,7 @@ my %WriteMakefileArgs = (
   "NAME" => "Device::WebIO::Firmata",
   "PREREQ_PM" => {
     "Device::Firmata" => 0,
-    "Device::WebIO" => 0,
+    "Device::WebIO" => "0.002",
     "Exception::Tiny" => 0,
     "Moo" => 0,
     "namespace::clean" => 0
@@ -29,7 +29,7 @@ my %WriteMakefileArgs = (
   "TEST_REQUIRES" => {
     "Test::Pod" => 0
   },
-  "VERSION" => "0.001",
+  "VERSION" => "0.002",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -38,7 +38,7 @@ my %WriteMakefileArgs = (
 
 my %FallbackPrereqs = (
   "Device::Firmata" => 0,
-  "Device::WebIO" => 0,
+  "Device::WebIO" => "0.002",
   "Exception::Tiny" => 0,
   "Moo" => 0,
   "Test::Pod" => 0,
